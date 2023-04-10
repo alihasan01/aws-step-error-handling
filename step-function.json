@@ -1,0 +1,48 @@
+{
+  "Comment": "State machine for reading data from bucket",
+  "StartAt": "Map",
+  "States": {
+    "Map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "process-file",
+        "States": {
+          "process-file": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+            "Catch": [
+              {
+                "ErrorEquals": [
+                  "States.TaskFailed"
+                ],
+                "Next": "handla errors"
+              }
+            ],
+            "Parameters": {
+              "Payload": {
+                "input.$": "$",
+                "token.$": "$$.Task.Token"
+              },
+              "FunctionName": "<your-lambda-function>"
+            },
+            "End": true
+          },
+          "handla errors": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "OutputPath": "$.Payload",
+            "Parameters": {
+              "Payload.$": "$",
+              "FunctionName": "<your-second-lambda-function>"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}
